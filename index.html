@@ -1,0 +1,341 @@
+<!doctype html><html lang='ru'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Dashboard Lab</title><script src='https://cdn.jsdelivr.net/npm/chart.js'>
+const shelterBase={people:38,water:1450,food:720,energy:82,meds:93}; let sh={...shelterBase}; let shlog=[];
+function days(v,rate){return Math.max(0,Math.floor(v/rate))}
+function shDays(){return {water:days(sh.water,sh.people*3),food:days(sh.food,sh.people*2),energy:Math.max(0,Math.floor(sh.energy/3)),meds:days(sh.meds,Math.max(1,sh.people*.08))}}
+function renderShelter(){const d=shDays();const items=[['Население',sh.people,'чел.'],['Вода',sh.water,'л'],['Еда',sh.food,'порц.'],['Энергия',sh.energy,'%'],['Медикаменты',sh.meds,'компл.'],['Минимум',Math.min(d.water,d.food,d.energy,d.meds),'дней']];document.getElementById('shelterStats').innerHTML=items.map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');let min=Math.min(...Object.values(d));let status=min<5?'КРИТИЧЕСКОЕ':min<10?'НЕСТАБИЛЬНОЕ':'СТАБИЛЬНОЕ';let el=document.getElementById('shelterStatus');el.textContent=status;el.className=min<5?'dangerText':min<10?'':'goodText';document.getElementById('shelterHint').textContent=`Самый дефицитный ресурс рассчитан примерно на ${min} дней.`;drawShelter(d);renderLog()}
+function drawShelter(d){const c=document.getElementById('shelterChart');if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);let vals=[d.water,d.food,d.energy,d.meds], labs=['Вода','Еда','Энергия','Медицина'];let max=Math.max(30,...vals);vals.forEach((v,i)=>{let bx=55+i*155,h=Math.min(175,v/max*175);x.fillStyle='#17233b';x.fillRect(bx,200-h,90,h);x.fillStyle='#8dff4f';x.fillRect(bx,200-h,90,Math.min(h,6));x.fillStyle='#dce6f8';x.font='bold 16px Arial';x.fillText(v+' дн.',bx+13,190-h);x.fillStyle='#8f9bb3';x.font='13px Arial';x.fillText(labs[i],bx+12,225)})}
+function addLog(t){shlog.unshift(t);renderLog()};function renderLog(){let e=document.getElementById('decisionLog');if(!e)return;e.innerHTML=shlog.length?shlog.map((x,i)=>`<div class="logitem"><b>#${shlog.length-i}</b> ${x}</div>`).join(''):'<div class="muted">Решений пока нет.</div>'}
+function resetShelter(){sh={...shelterBase};shlog=[];let b=document.getElementById('shelterEventBox');if(b)b.innerHTML='<b>Система готова.</b><br>Выбери событие.';renderShelter()}
+function shelterEvent(t){let b=document.getElementById('shelterEventBox');if(t==='people'){b.innerHTML=`<b>📡 ВХОДЯЩЕЕ СООБЩЕНИЕ</b><br>У ворот убежища находятся <b>15 человек</b>, среди них 4 ребёнка. Запасов у группы нет.<div class="choice"><button onclick="acceptPeople()">ПРИНЯТЬ</button><button onclick="refusePeople()">ОТКАЗАТЬ</button></div>`}if(t==='water'){sh.water=Math.max(0,sh.water-520);addLog('Авария резервуара: потеряно 520 л воды.');b.innerHTML='<b>💧 АВАРИЯ</b><br>Повреждён резервуар. Потеряно 520 литров воды.';renderShelter()}if(t==='sick'){sh.meds=Math.max(0,sh.meds-24);sh.energy=Math.max(0,sh.energy-5);addLog('Заболели 6 жителей: использовано 24 комплекта медикаментов и 5% энергии.');b.innerHTML='<b>🩺 МЕДИЦИНСКАЯ ТРЕВОГА</b><br>Заболели 6 жителей. Медпункт работает в усиленном режиме.';renderShelter()}if(t==='supply'){sh.water+=300;sh.food+=240;sh.meds+=18;addLog('Найден склад: +300 л воды, +240 порций еды, +18 комплектов медикаментов.');b.innerHTML='<b>📦 ХОРОШИЕ НОВОСТИ</b><br>Разведгруппа нашла небольшой склад с припасами.';renderShelter()}}
+function acceptPeople(){sh.people+=15;addLog('Принято решение ПРИНЯТЬ 15 человек. Население увеличилось до '+sh.people+'.');document.getElementById('shelterEventBox').innerHTML='<b>РЕШЕНИЕ ПРИНЯТО</b><br>15 человек размещены в убежище. Расход ресурсов вырос.';renderShelter()}
+function refusePeople(){addLog('Принято решение ОТКАЗАТЬ группе из 15 человек. Ресурсы не изменились.');document.getElementById('shelterEventBox').innerHTML='<b>РЕШЕНИЕ ПРИНЯТО</b><br>Группе отказано во входе. Текущие ресурсы сохранены.';renderShelter()}
+</script><style>
+:root{--bg:#07100d;--panel:#101a16;--line:#26352f;--acid:#b8ff32;--text:#f4f7f5;--muted:#93a29b;--danger:#ff5d68;--cyan:#55e6ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 70% 10%,#173026 0,#07100d 38%);color:var(--text);font-family:Arial,sans-serif}.wrap{max-width:1180px;margin:auto;padding:28px}.top{display:flex;justify-content:space-between;align-items:center}.brand{font-weight:900;letter-spacing:3px;font-size:24px}.brand b{color:var(--acid)}button{font:inherit}.ghost,.back{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 14px;border-radius:10px}.hero{padding:80px 0 35px}.eyebrow{color:var(--acid);font-weight:700;letter-spacing:2px}.hero h1{font-size:clamp(44px,8vw,90px);line-height:.9;margin:12px 0}.hero p{color:var(--muted);font-size:18px;max-width:650px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.card{background:linear-gradient(145deg,#111c17,#0b1410);border:1px solid var(--line);border-radius:20px;padding:26px;min-height:190px;cursor:pointer;transition:.2s}.card:hover{transform:translateY(-3px);border-color:var(--acid)}.card h2{font-size:30px;margin:6px 0}.card p{color:var(--muted)}.disabled{opacity:.45;cursor:not-allowed}.disabled:hover{transform:none;border-color:var(--line)}.tag{display:inline-block;padding:6px 9px;border-radius:999px;background:#1d2b24;color:var(--acid);font-size:12px;font-weight:700}.screen{display:none}.screen.active{display:block}.modes{grid-template-columns:repeat(3,1fr);margin-top:30px}.dashboard{display:grid;grid-template-columns:1fr 340px;gap:18px;margin-top:25px}.mainpanel,.side{background:rgba(16,26,22,.92);border:1px solid var(--line);border-radius:18px;padding:18px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kpi{background:#0b1410;border:1px solid var(--line);border-radius:14px;padding:16px}.kpi small{color:var(--muted)}.value{font-size:32px;font-weight:900;margin-top:7px}.bar{height:7px;background:#26352f;border-radius:10px;margin-top:12px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acid)}.chartbox{height:280px;margin-top:18px;background:#0b1410;border:1px solid var(--line);border-radius:14px;padding:12px}.status{display:flex;gap:8px;align-items:center;color:var(--acid);font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:var(--acid);box-shadow:0 0 14px var(--acid)}.event{margin-top:18px;border:1px solid #503038;background:#1d1114;border-radius:14px;padding:16px}.event strong{color:var(--danger)}.actions{display:grid;gap:9px;margin-top:14px}.action{border:1px solid var(--line);background:#121f19;color:white;padding:12px;border-radius:10px;text-align:left;cursor:pointer}.action:hover{border-color:var(--acid)}.primary{background:var(--acid);color:#07100d;border:0;padding:12px 16px;border-radius:10px;font-weight:900;cursor:pointer}.headrow{display:flex;justify-content:space-between;align-items:center;gap:10px}.mission{color:var(--muted)}@media(max-width:850px){.grid,.modes,.dashboard{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.hero{padding-top:45px}}
+
+.eventBtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}.eventBtns button,.choice button,.btn{border:1px solid var(--line);background:#121f19;color:var(--text);padding:12px 14px;border-radius:10px;text-align:left;cursor:pointer;font-weight:700;transition:.18s ease}.eventBtns button:hover,.choice button:hover,.btn:hover{border-color:var(--acid);background:#17271f;box-shadow:0 0 0 1px rgba(184,255,50,.12)}.choice button{text-align:center}.choice button:first-child{border-color:#466b32;color:var(--acid)}.choice button:last-child{border-color:#5b3438;color:#ff8b93}.btn.primary{background:var(--acid);color:#07100d;border-color:var(--acid);text-align:center}.btn.primary:hover{background:#c7ff5c}.alertbox{margin-top:14px;border:1px solid var(--line);background:#0b1410;border-radius:14px;padding:16px;line-height:1.55}.eventBtns button:active,.choice button:active,.btn:active{transform:translateY(1px)}@media(max-width:650px){.eventBtns{grid-template-columns:1fr}}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:18px 0 22px}.stat{display:flex;flex-direction:column;gap:6px;background:#0b1410;border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}.stat span{color:var(--muted);font-size:13px}.stat b{font-size:26px;line-height:1.05}.stat small{color:var(--muted);font-size:13px}.dashgrid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:18px}.panel{background:rgba(16,26,22,.92);border:1px solid var(--line);border-radius:18px;padding:18px}.muted{color:var(--muted)}@media(max-width:950px){.stats{grid-template-columns:repeat(3,1fr)}.dashgrid{grid-template-columns:1fr}}@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.log{max-height:260px;overflow:auto}.logitem{padding:10px 0;border-bottom:1px solid #26324a;font-size:14px}.choice{display:flex;gap:10px;margin-top:14px}.choice button{flex:1}.dangerText{color:#ff6b6b}.goodText{color:#70f5a4}
+.freeInput{width:100%;box-sizing:border-box;margin:7px 0 12px;padding:11px;border-radius:10px;background:#08150f;color:white;border:1px solid var(--line)} .freeAdd{width:100%;margin-top:5px} @media(max-width:900px){#free .dashgrid{grid-template-columns:1fr!important}#freeCanvas{grid-template-columns:1fr!important}}
+.print-only{display:none}
+@media print{
+ @page{size:A4 landscape;margin:10mm}
+ html,body{background:#fff!important;color:#111!important}
+ body *{visibility:hidden!important}
+ #free,#free *{visibility:visible!important}
+ #free{display:block!important;position:absolute!important;left:0;top:0;width:100%!important;background:#fff!important;color:#111!important;padding:0!important}
+ #free .top{display:none!important}
+ #free> .panel:first-of-type{display:none!important}
+ #free .free-layout{display:block!important}
+ #free .free-builder{display:none!important}
+ #free .free-live-head{display:block!important;background:#fff!important;border:0!important;padding:0 0 10px!important}
+ #free .free-live-head .eyebrow{color:#555!important}
+ #free .free-live-head h2{color:#111!important;font-size:26px!important}
+ #free .print-only{display:block!important;color:#666!important}
+ #freeCanvas{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8mm!important}
+ #freeCanvas .panel{background:#fff!important;color:#111!important;border:1px solid #cfd5d1!important;box-shadow:none!important;break-inside:avoid!important;page-break-inside:avoid!important;min-height:55mm!important}
+ #freeCanvas h3,#freeCanvas div,#freeCanvas span,#freeCanvas b{color:#111}
+ #freeCanvas .muted{color:#666!important}
+ #freeCanvas .free-card-controls{display:none!important}
+ #freeCanvas svg text{fill:#333!important}
+ #freeCanvas svg line{stroke:#777}
+ #freeCanvas svg polyline{stroke:#55a900}
+ #freeCanvas .bar{background:#e6e9e7!important}
+ #freeCanvas .bar i{background:#69bd16!important}
+}
+</style></head><body><div class='wrap'><div class='top'><div class='brand'>DASHBOARD <b>LAB</b></div><button class='ghost'></button></div>
+<section id='home' class='screen active'><div class='hero'><div class='eyebrow'>INTERACTIVE DATA TRAINING · PILOT</div><h1>SEE DATA.<br>MAKE DECISIONS.</h1><p>Учебный тренажёр для работы с показателями, визуализацией, событиями и аналитическими решениями.</p></div><div class='grid'><div class='card' onclick="show('junior')"><span class='tag'>ACTIVE</span><h2>JUNIOR VERSION</h2><p>Игровые сценарии, ресурсы, аварии и собственные дашборды.</p></div><div class='card disabled'><span class='tag'>COMING SOON</span><h2>PROFESSIONAL VERSION</h2><p>Бизнес-аналитика и профессиональные сценарии.</p></div></div></section>
+<section id='junior' class='screen'><div class='hero'><button class='back' onclick="show('home')">← Назад</button><div class='eyebrow' style='margin-top:30px'>JUNIOR VERSION</div><h1 style='font-size:58px'>ВЫБЕРИ СЦЕНАРИЙ</h1></div><div class='grid modes'><div class='card' onclick="show('space')"><div style='font-size:36px'>🚀</div><h2>Космическая станция</h2><p>Контролируй ресурсы станции и реагируй на аварийные ситуации.</p></div><div class='card' onclick="show('shelter'); resetShelter()"><div style='font-size:36px'>☢️</div><h2>Убежище</h2><p>Люди, еда, вода, энергия и последствия решений.</p><span class='tag'>PLAY</span></div><div class='card' onclick="show('free'); initFree()"><div style='font-size:36px'>🧩</div><h2>Свободный дашборд</h2><p>Создай собственную тему, показатели и визуализацию.</p><span class='tag'>CREATE</span></div></div></section>
+
+<section id='free' class='screen'>
+<div class='top'><div><button class='back' onclick="show('junior')">← Сценарии</button><div class='eyebrow'>JUNIOR / FREE DASHBOARD</div><h2 style='font-size:38px;margin:8px 0'>🧩 СВОБОДНЫЙ ДАШБОРД</h2><p class='muted'>Сам выбери данные и способ их отображения.</p></div><div><button class='btn' onclick='resetFree()'>Очистить</button> <button class='btn primary' onclick='exportFreePDF()'>Экспорт PDF</button></div></div>
+
+<div class='panel' style='margin-bottom:18px'>
+  <label class='muted'>Название проекта</label>
+  <input id='freeProject' value='Мой дашборд' oninput='renderFreeTitle()' style='width:100%;margin-top:8px;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:#08150f;color:var(--text);font-size:18px'>
+</div>
+
+<div class='dashgrid free-layout' style='grid-template-columns:360px 1fr'>
+<div class='panel free-builder'>
+ <h3>+ Добавить элемент</h3>
+ <label class='muted'>Тип визуализации</label>
+ <select id='freeType' onchange='freeForm()' style='width:100%;margin:8px 0 14px;padding:12px;border-radius:10px;background:#0c1b13;color:var(--text);border:1px solid var(--line)'>
+  <option value='kpi'>🔢 KPI-карточка</option>
+  <option value='bar'>📊 Столбцы</option>
+  <option value='line'>📈 Линейный график</option>
+  <option value='pie'>🥧 Круговая диаграмма</option>
+  <option value='gauge'>🎯 Шкала</option>
+  <option value='progress'>▰ Прогресс-бар</option>
+  <option value='change'>↗ Индикатор изменения</option>
+ </select>
+ <div id='freeForm'></div>
+ <div id='freeTip' class='event' style='margin-top:14px'><b>💡 Подсказка</b><br>Выбери способ отображения под задачу.</div>
+</div>
+<div>
+ <div class='panel free-live-head' style='margin-bottom:14px'><div class='eyebrow'>LIVE DASHBOARD</div><h2 id='freeTitle' style='margin:6px 0 0'>МОЙ ДАШБОРД</h2><div id='freeReportMeta' class='muted print-only' style='margin-top:6px'></div></div>
+ <div id='freeCanvas' class='grid' style='grid-template-columns:repeat(2,minmax(0,1fr))'></div>
+</div>
+</div>
+</section>
+
+<section id='shelter' class='screen'>
+<div class='top'><div><button class='back' onclick="show('junior')">← Сценарии</button><div class='eyebrow'>JUNIOR / SHELTER-17</div><h2 style='font-size:38px;margin:8px 0'>☢️ УБЕЖИЩЕ ПОСЛЕ КАТАСТРОФЫ</h2></div><div><button class='btn' onclick='resetShelter()'>Сбросить</button> <button class='btn primary' onclick='scenarioReport("shelter")'>Экспорт PDF</button></div></div>
+<div class='mission'><b>ЗАДАЧА:</b> поддерживай убежище в рабочем состоянии. Следи за ресурсами, оценивай последствия и фиксируй решения.</div>
+<div id='shelterStats' class='stats'></div>
+<div class='dashgrid'><div class='panel'><h3>Срок автономности</h3><canvas id='shelterChart' width='700' height='250'></canvas></div><div class='panel'><h3>Состояние убежища</h3><div id='shelterStatus' style='font-size:24px;font-weight:800;margin-top:18px'></div><p id='shelterHint' class='muted'></p></div></div>
+<div class='dashgrid'><div class='panel'><h3>Центр событий</h3><div class='eventBtns'><button onclick="shelterEvent('people')">👥 Люди у ворот</button><button onclick="shelterEvent('water')">💧 Авария воды</button><button onclick="shelterEvent('sick')">🩺 Заболевание</button><button onclick="shelterEvent('supply')">📦 Найдены припасы</button></div><div id='shelterEventBox' class='alertbox'><b>Система готова.</b><br>Выбери событие.</div></div><div class='panel'><h3>Журнал решений</h3><div id='decisionLog' class='log'><div class='muted'>Решений пока нет.</div></div></div></div>
+</section><section id='space' class='screen'><div class='hero' style='padding:35px 0 5px'><button class='back' onclick="show('junior')">← Сценарии</button><div class='headrow'><div><div class='eyebrow' style='margin-top:25px'>MISSION // ORBIT-7</div><h1 style='font-size:46px;margin-bottom:8px'>КОСМИЧЕСКАЯ СТАНЦИЯ</h1><div class='mission'>Экипаж: 6 человек · День миссии: 47</div></div><button class='primary' onclick='scenarioReport("space")'>ЭКСПОРТ / PDF</button></div></div><div class='dashboard'><div class='mainpanel'><div class='headrow'><div class='status'><span class='dot'></span> СИСТЕМЫ СТАНЦИИ АКТИВНЫ</div><small style='color:var(--muted)'>LIVE DATA</small></div><div class='kpis' id='kpis'></div><div class='chartbox' style='height:330px'>
+      <div style='margin:2px 4px 10px'>
+        <div style='font-weight:900;font-size:17px'>ПРОГНОЗ РЕСУРСОВ НА 24 ЧАСА</div>
+        <div style='color:var(--muted);font-size:13px;margin-top:3px'>Расчёт при текущем состоянии систем · остаток ресурса, %</div>
+      </div>
+      <div style='height:260px'><canvas id='chart'></canvas></div>
+    </div></div><aside class='side'><h3>ЦЕНТР СОБЫТИЙ</h3><p style='color:var(--muted)'>Запусти учебную ситуацию и проследи, как изменятся показатели.</p><div class='actions'><button class='action' onclick="eventRun('oxygen')">⚠️ Сбой регенерации кислорода</button><button class='action' onclick="eventRun('solar')">☀️ Повреждение солнечных панелей</button><button class='action' onclick="eventRun('water')">💧 Утечка воды</button><button class='action' onclick='resetData()'>↻ Восстановить исходные данные</button></div><div id='eventbox'></div></aside></div></section></div>
+<script>const initial={oxygen:92,energy:81,water:76,fuel:64,temp:22,comms:96};let data={...initial};const labels={oxygen:'Кислород',energy:'Энергия',water:'Вода',fuel:'Топливо',temp:'Температура',comms:'Связь'};let chart;function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='space')setTimeout(render,30)}function resourceForecast(key){
+ const current=data[key];
+ const normal={oxygen:4,energy:5,water:3,fuel:2};
+ const rate=(key==='oxygen'&&data.oxygen<initial.oxygen)?15:
+            (key==='energy'&&data.energy<initial.energy)?13:
+            (key==='water'&&data.water<initial.water)?12:normal[key];
+ return [0,6,12,18,24].map(h=>Math.max(0,Math.round(current-rate*(h/6))));
+}
+function render(){
+ let el=document.getElementById('kpis');el.innerHTML='';
+ Object.entries(data).forEach(([k,v])=>{
+  let suffix=k==='temp'?'°C':'%';let width=k==='temp'?Math.min(100,v*3):v;
+  el.innerHTML+=`<div class='kpi'><small>${labels[k]}</small><div class='value'>${v}${suffix}</div><div class='bar'><i style='width:${width}%'></i></div></div>`
+ });
+ let ctx=document.getElementById('chart');if(chart)chart.destroy();
+ chart=new Chart(ctx,{type:'line',data:{labels:['Сейчас','6 ч','12 ч','18 ч','24 ч'],datasets:[
+  {label:'Кислород',data:resourceForecast('oxygen'),borderColor:'#b8ff32',backgroundColor:'#b8ff32',tension:.28,pointRadius:3},
+  {label:'Энергия',data:resourceForecast('energy'),borderColor:'#55e6ff',backgroundColor:'#55e6ff',tension:.28,pointRadius:3},
+  {label:'Вода',data:resourceForecast('water'),borderColor:'#4f8cff',backgroundColor:'#4f8cff',tension:.28,pointRadius:3},
+  {label:'Топливо',data:resourceForecast('fuel'),borderColor:'#ffb84d',backgroundColor:'#ffb84d',tension:.28,pointRadius:3}
+ ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{
+  legend:{labels:{color:'#c5d0ca',usePointStyle:true}},
+  tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y}%`}}
+ },scales:{
+  x:{title:{display:true,text:'Время от текущего момента',color:'#93a29b'},ticks:{color:'#93a29b'},grid:{color:'#1d2b24'}},
+  y:{min:0,max:100,title:{display:true,text:'Остаток ресурса, %',color:'#93a29b'},ticks:{color:'#93a29b',callback:(v)=>v+'%'},grid:{color:'#1d2b24'}}
+ }}})
+}
+function eventRun(type){let msg='';if(type==='oxygen'){data.oxygen=Math.max(0,data.oxygen-35);msg='<strong>🚨 АВАРИЯ: РЕГЕНЕРАЦИЯ КИСЛОРОДА</strong><p>Производительность системы снизилась. Определи, какой показатель стал критическим и что нужно сделать в первую очередь.</p>'}if(type==='solar'){data.energy=Math.max(0,data.energy-42);msg='<strong>🚨 ПОВРЕЖДЕНЫ СОЛНЕЧНЫЕ ПАНЕЛИ</strong><p>Поступление энергии резко снизилось. Какие системы станции теперь находятся под угрозой?</p>'}if(type==='water'){data.water=Math.max(0,data.water-31);msg='<strong>🚨 ОБНАРУЖЕНА УТЕЧКА ВОДЫ</strong><p>Запас воды уменьшается. Оцени ситуацию и предложи решение.</p>'}document.getElementById('eventbox').innerHTML=`<div class='event'>${msg}</div>`;render()}function resetData(){data={...initial};document.getElementById('eventbox').innerHTML='';render()}
+const shelterBase={people:38,water:1450,food:720,energy:82,meds:93}; let sh={...shelterBase}; let shlog=[];
+function days(v,rate){return Math.max(0,Math.floor(v/rate))}
+function shDays(){return {water:days(sh.water,sh.people*3),food:days(sh.food,sh.people*2),energy:Math.max(0,Math.floor(sh.energy/3)),meds:days(sh.meds,Math.max(1,sh.people*.08))}}
+function renderShelter(){const d=shDays();const items=[['Население',sh.people,'чел.'],['Вода',sh.water,'л'],['Еда',sh.food,'порц.'],['Энергия',sh.energy,'%'],['Медикаменты',sh.meds,'компл.'],['Минимум',Math.min(d.water,d.food,d.energy,d.meds),'дней']];document.getElementById('shelterStats').innerHTML=items.map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');let min=Math.min(...Object.values(d));let status=min<5?'КРИТИЧЕСКОЕ':min<10?'НЕСТАБИЛЬНОЕ':'СТАБИЛЬНОЕ';let el=document.getElementById('shelterStatus');el.textContent=status;el.className=min<5?'dangerText':min<10?'':'goodText';document.getElementById('shelterHint').textContent=`Самый дефицитный ресурс рассчитан примерно на ${min} дней.`;drawShelter(d);renderLog()}
+function drawShelter(d){const c=document.getElementById('shelterChart');if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);let vals=[d.water,d.food,d.energy,d.meds], labs=['Вода','Еда','Энергия','Медицина'];let max=Math.max(30,...vals);vals.forEach((v,i)=>{let bx=55+i*155,h=Math.min(175,v/max*175);x.fillStyle='#17233b';x.fillRect(bx,200-h,90,h);x.fillStyle='#8dff4f';x.fillRect(bx,200-h,90,Math.min(h,6));x.fillStyle='#dce6f8';x.font='bold 16px Arial';x.fillText(v+' дн.',bx+13,190-h);x.fillStyle='#8f9bb3';x.font='13px Arial';x.fillText(labs[i],bx+12,225)})}
+function addLog(t){shlog.unshift(t);renderLog()};function renderLog(){let e=document.getElementById('decisionLog');if(!e)return;e.innerHTML=shlog.length?shlog.map((x,i)=>`<div class="logitem"><b>#${shlog.length-i}</b> ${x}</div>`).join(''):'<div class="muted">Решений пока нет.</div>'}
+function resetShelter(){sh={...shelterBase};shlog=[];let b=document.getElementById('shelterEventBox');if(b)b.innerHTML='<b>Система готова.</b><br>Выбери событие.';renderShelter()}
+function shelterEvent(t){let b=document.getElementById('shelterEventBox');if(t==='people'){b.innerHTML=`<b>📡 ВХОДЯЩЕЕ СООБЩЕНИЕ</b><br>У ворот убежища находятся <b>15 человек</b>, среди них 4 ребёнка. Запасов у группы нет.<div class="choice"><button onclick="acceptPeople()">ПРИНЯТЬ</button><button onclick="refusePeople()">ОТКАЗАТЬ</button></div>`}if(t==='water'){sh.water=Math.max(0,sh.water-520);addLog('Авария резервуара: потеряно 520 л воды.');b.innerHTML='<b>💧 АВАРИЯ</b><br>Повреждён резервуар. Потеряно 520 литров воды.';renderShelter()}if(t==='sick'){sh.meds=Math.max(0,sh.meds-24);sh.energy=Math.max(0,sh.energy-5);addLog('Заболели 6 жителей: использовано 24 комплекта медикаментов и 5% энергии.');b.innerHTML='<b>🩺 МЕДИЦИНСКАЯ ТРЕВОГА</b><br>Заболели 6 жителей. Медпункт работает в усиленном режиме.';renderShelter()}if(t==='supply'){sh.water+=300;sh.food+=240;sh.meds+=18;addLog('Найден склад: +300 л воды, +240 порций еды, +18 комплектов медикаментов.');b.innerHTML='<b>📦 ХОРОШИЕ НОВОСТИ</b><br>Разведгруппа нашла небольшой склад с припасами.';renderShelter()}}
+function acceptPeople(){sh.people+=15;addLog('Принято решение ПРИНЯТЬ 15 человек. Население увеличилось до '+sh.people+'.');document.getElementById('shelterEventBox').innerHTML='<b>РЕШЕНИЕ ПРИНЯТО</b><br>15 человек размещены в убежище. Расход ресурсов вырос.';renderShelter()}
+function refusePeople(){addLog('Принято решение ОТКАЗАТЬ группе из 15 человек. Ресурсы не изменились.');document.getElementById('shelterEventBox').innerHTML='<b>РЕШЕНИЕ ПРИНЯТО</b><br>Группе отказано во входе. Текущие ресурсы сохранены.';renderShelter()}
+
+let freeItems=[], freeCharts=[];
+function initFree(){freeForm();renderFree()}
+function renderFreeTitle(){let e=document.getElementById('freeTitle');if(e)e.textContent=(document.getElementById('freeProject').value||'Мой дашборд').toUpperCase()}
+function freeForm(){
+ let t=document.getElementById('freeType').value, f=document.getElementById('freeForm'), tip=document.getElementById('freeTip');
+ let common=`<label class="muted">Название показателя</label><input id="fvTitle" placeholder="Например: Просмотры" style="width:100%;margin:7px 0 12px;padding:11px;border-radius:10px;background:#08150f;color:white;border:1px solid var(--line)">`;
+ if(t==='kpi') f.innerHTML=common+`<label class="muted">Значение</label><input id="fvValue" type="number" value="4850" class="freeInput"><button class="btn primary freeAdd" onclick="addFree()">Добавить</button>`;
+ if(['bar','line','pie'].includes(t)) f.innerHTML=common+`<label class="muted">Данные</label><textarea id="fvData" rows="5" class="freeInput" placeholder="ПН 1000&#10;ВТ 1200&#10;СР 800"></textarea><button class="btn primary freeAdd" onclick="addFree()">Добавить</button>`;
+ if(t==='gauge'||t==='progress') f.innerHTML=common+`<label class="muted">Текущее значение</label><input id="fvValue" type="number" value="68" class="freeInput"><label class="muted">Максимум / цель</label><input id="fvMax" type="number" value="100" class="freeInput"><button class="btn primary freeAdd" onclick="addFree()">Добавить</button>`;
+ if(t==='change') f.innerHTML=common+`<label class="muted">Текущее значение</label><input id="fvValue" type="number" value="12450" class="freeInput"><label class="muted">Изменение, %</label><input id="fvChange" type="number" value="18" class="freeInput"><button class="btn primary freeAdd" onclick="addFree()">Добавить</button>`;
+ let tips={kpi:'KPI подходит для одного важного числа.',bar:'Столбцы удобны для сравнения нескольких объектов.',line:'Линия лучше всего показывает изменение показателя во времени.',pie:'Пирог показывает части одного целого. Желательно, чтобы значения составляли 100%.',gauge:'Шкала показывает положение значения между минимумом и максимумом.',progress:'Прогресс показывает, насколько близко ты к цели.',change:'Индикатор показывает текущее значение и рост или падение.'};
+ tip.innerHTML='<b>💡 Подсказка</b><br>'+tips[t];
+}
+function parseFreeData(v){
+ return v.split(/\n|,/).map(x=>x.trim()).filter(Boolean).map((x,i)=>{
+   let m=x.match(/^(.*?)(?:\s*[:=\-]\s*|\s+)(-?\d+(?:[.,]\d+)?)\s*$/);
+   if(m) return {label:(m[1]||('Пункт '+(i+1))).trim(),value:Number(m[2].replace(',','.'))||0};
+   let n=x.match(/-?\d+(?:[.,]\d+)?/);
+   return {label:n?x.replace(n[0],'').replace(/[:=\-]/g,'').trim()||('Пункт '+(i+1)):('Пункт '+(i+1)),value:n?Number(n[0].replace(',','.'))||0:0}
+ })
+}
+function addFree(){
+ let type=document.getElementById('freeType').value,title=(document.getElementById('fvTitle').value||'Показатель').trim();
+ let item={id:Date.now(),type,title};
+ if(['bar','line','pie'].includes(type)){
+   item.data=parseFreeData(document.getElementById('fvData').value);
+   if(item.data.length<2 || item.data.every(d=>d.value===0)){
+     document.getElementById('freeTip').innerHTML='<b>⚠️ Нужны данные</b><br>Введи минимум 2 строки, например: <b>ПН 1000</b>, <b>ВТ 1200</b>.';
+     return;
+   }
+ } else {
+   item.value=Number(document.getElementById('fvValue')?.value||0);
+   item.max=Number(document.getElementById('fvMax')?.value||100);
+   item.change=Number(document.getElementById('fvChange')?.value||0)
+ }
+ freeItems.push(item);renderFree()
+}function removeFree(id){freeItems=freeItems.filter(x=>x.id!==id);renderFree()}
+function changeFreeType(id,t){
+ let x=freeItems.find(x=>x.id===id);if(!x||!t)return;
+ const chartTypes=['bar','line','pie'];
+ if(chartTypes.includes(t)){
+   if(!x.data || x.data.length<2){
+     let raw=prompt('Для этого типа нужны несколько значений. Введи через запятую, например: Пн:1200, Вт:1800, Ср:950');
+     if(!raw){renderFree();return}
+     x.data=parseFreeData(raw);
+     if(x.data.length<2){alert('Нужно минимум два значения.');renderFree();return}
+   }
+ } else if(typeof x.value!=='number'){
+   x.value=(x.data&&x.data.length)?x.data[0].value:0;
+   x.max=100;x.change=0;
+ }
+ x.type=t;renderFree()
+}function renderFree(){
+ renderFreeTitle(); freeCharts.forEach(c=>c.destroy());freeCharts=[];
+ let c=document.getElementById('freeCanvas');if(!c)return;
+ if(!freeItems.length){c.innerHTML=`<div class="panel" style="grid-column:1/-1;text-align:center;padding:50px"><h3>Дашборд пока пуст</h3><p class="muted">Добавь первый элемент слева.</p></div>`;return}
+ c.innerHTML=freeItems.map(x=>`<div class="panel" id="free-${x.id}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3 style="margin:0">${x.title}</h3><div class="free-card-controls"><select onchange="changeFreeType(${x.id},this.value)" style="background:#0c1b13;color:#aebbb4;border:1px solid var(--line);border-radius:8px;padding:5px">
+<option value="" selected disabled>Сменить тип</option>
+<option value="kpi">KPI</option><option value="bar">Столбцы</option><option value="line">График</option><option value="pie">Пирог</option><option value="gauge">Шкала</option><option value="progress">Прогресс</option><option value="change">Изменение</option></select> <button onclick="removeFree(${x.id})" style="background:transparent;color:#ff6b6b;border:0;font-size:18px">×</button></div></div><div class="freeViz" id="viz-${x.id}" style="margin-top:16px;min-height:145px"></div></div>`).join('');
+ freeItems.forEach(drawFree)
+}
+function drawFree(x){
+ let e=document.getElementById('viz-'+x.id);
+ if(x.type==='kpi'){e.innerHTML=`<div style="font-size:52px;font-weight:900;color:var(--lime)">${Number(x.value||0).toLocaleString('ru-RU')}</div>`;return}
+ if(x.type==='progress'){let p=Math.max(0,Math.min(100,(x.max?x.value/x.max:0)*100));e.innerHTML=`<div style="font-size:30px;font-weight:900">${Math.round(p)}%</div><div class="bar" style="margin-top:16px"><i style="width:${p}%"></i></div><p class="muted">${x.value} из ${x.max}</p>`;return}
+ if(x.type==='gauge'){
+ let p=Math.max(0,Math.min(100,(x.max?x.value/x.max:0)*100)),ang=-90+p*1.8;
+ let r=72,cx=100,cy=92,circ=Math.PI*r,active=circ*p/100;
+ e.innerHTML=`<div style="width:220px;margin:4px auto 0;text-align:center">
+ <svg viewBox="0 0 200 125" style="width:100%;height:135px;overflow:visible">
+   <path d="M 28 92 A 72 72 0 0 1 172 92" fill="none" stroke="#203229" stroke-width="16" stroke-linecap="round"/>
+   <path d="M 28 92 A 72 72 0 0 1 172 92" fill="none" stroke="#8dff4f" stroke-width="16" stroke-linecap="round"
+     stroke-dasharray="${active} ${circ}" />
+   <line x1="100" y1="92" x2="100" y2="34" stroke="#f4f7f5" stroke-width="4" stroke-linecap="round"
+     transform="rotate(${ang} 100 92)"/>
+   <circle cx="100" cy="92" r="8" fill="#f4f7f5"/><circle cx="100" cy="92" r="4" fill="#0c1b13"/>
+   <text x="25" y="116" fill="#93a29b" font-size="11" text-anchor="middle">0</text>
+   <text x="100" y="22" fill="#93a29b" font-size="11" text-anchor="middle">${Math.round(x.max/2)}</text>
+   <text x="175" y="116" fill="#93a29b" font-size="11" text-anchor="middle">${x.max}</text>
+ </svg>
+ <div style="font-size:30px;font-weight:900;margin-top:-14px">${x.value} <span style="color:#93a29b;font-size:17px">/ ${x.max}</span></div>
+ <div style="color:#8dff4f;font-size:13px;font-weight:800;margin-top:3px">${Math.round(p)}% диапазона</div>
+ </div>`;return}
+ if(x.type==='change'){let up=x.change>=0;e.innerHTML=`<div style="font-size:42px;font-weight:900">${Number(x.value||0).toLocaleString('ru-RU')}</div><div style="font-size:25px;font-weight:800;color:${up?'#8dff4f':'#ff6b6b'}">${up?'↑':'↓'} ${Math.abs(x.change)}%</div>`;return}
+ if(!x.data || x.data.length<2){e.innerHTML='<div class="event">⚠️ Для диаграммы нужны минимум два значения.</div>';return}
+ const data=x.data,max=Math.max(1,...data.map(d=>d.value));
+ if(x.type==='bar'){
+  e.innerHTML=`<div style="height:190px;display:flex;align-items:flex-end;gap:14px;border-left:1px solid #314039;border-bottom:1px solid #314039;padding:10px 12px 0">${data.map(d=>{let h=Math.max(3,d.value/max*145);return `<div style="flex:1;min-width:34px;text-align:center"><div style="font-size:12px;color:#dce6df;margin-bottom:5px">${d.value}</div><div style="height:${h}px;background:#8dff4f;border-radius:6px 6px 0 0"></div><div style="font-size:11px;color:#93a29b;margin-top:7px">${d.label}</div></div>`}).join('')}</div>`;return
+ }
+ if(x.type==='line'){
+  const w=500,h=190,pad=30,iw=w-pad*2,ih=h-pad*2;const pts=data.map((d,i)=>[pad+i*iw/(data.length-1),h-pad-(d.value/max)*ih]);
+  e.innerHTML=`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:210px"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#314039"/><line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" stroke="#314039"/><polyline fill="none" stroke="#8dff4f" stroke-width="4" points="${pts.map(p=>p.join(',')).join(' ')}"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#8dff4f"/><text x="${p[0]}" y="${p[1]-10}" fill="#dce6df" font-size="12" text-anchor="middle">${data[i].value}</text><text x="${p[0]}" y="${h-8}" fill="#93a29b" font-size="11" text-anchor="middle">${data[i].label}</text>`).join('')}</svg>`;return
+ }
+ if(x.type==='pie'){
+  const total=data.reduce((a,d)=>a+Math.max(0,d.value),0)||1,colors=['#8dff4f','#55e6ff','#ffb84d','#ff6b6b','#9b7bff','#4f8cff','#ffd84d'];let cur=0,parts=[];
+  data.forEach((d,i)=>{let a=cur/total*360;cur+=Math.max(0,d.value);parts.push(`${colors[i%colors.length]} ${a}deg ${cur/total*360}deg`)});
+  e.innerHTML=`<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap"><div style="width:180px;height:180px;border-radius:50%;background:conic-gradient(${parts.join(',')})"></div><div style="flex:1;min-width:150px">${data.map((d,i)=>`<div style="display:flex;gap:8px;margin:8px 0;align-items:center"><i style="width:11px;height:11px;border-radius:50%;background:${colors[i%colors.length]};display:inline-block"></i><span style="color:#aebbb4">${d.label}</span><b style="margin-left:auto">${d.value} (${Math.round(d.value/total*100)}%)</b></div>`).join('')}</div></div>`;return
+ }
+}
+
+function scenarioReport(kind){
+ const old=document.getElementById('scenarioReportOverlay'); if(old) old.remove();
+ const ov=document.createElement('div');ov.id='scenarioReportOverlay';
+ ov.style.cssText='position:fixed;inset:0;z-index:99998;background:#07110c;padding:22px;overflow:auto';
+ let title='',body='';
+ if(kind==='space'){
+   title='КОСМИЧЕСКАЯ СТАНЦИЯ';
+   const cards=[...document.querySelectorAll('#kpis .kpi')].map(x=>x.innerText.trim()).filter(Boolean);
+   body=`<div class="report-grid">${cards.map(x=>`<div class="report-card">${x.replace(/\n/g,'<br>')}</div>`).join('')}</div>
+   <div class="report-note"><b>Состояние / события</b><br>${(document.getElementById('eventbox')?.innerText||'Системы работают в штатном режиме.').replace(/\n/g,'<br>')}</div>`;
+ }else{
+   title='УБЕЖИЩЕ ПОСЛЕ КАТАСТРОФЫ';
+   const stats=(document.getElementById('shelterStats')?.innerText||'').split('\n').filter(Boolean);
+   body=`<div class="report-grid">${stats.map(x=>`<div class="report-card">${x}</div>`).join('')}</div>
+   <div class="report-note"><b>Журнал решений</b><br>${(document.getElementById('decisionLog')?.innerText||'Событий пока нет.').replace(/\n/g,'<br>')}</div>`;
+ }
+ ov.innerHTML=`<div style="max-width:1180px;margin:auto">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+   <div><div style="color:#8dff4f;font-weight:900;letter-spacing:2px">ОТЧЁТ / ПРЕДПРОСМОТР</div><div style="font-size:30px;font-weight:900;color:white">${title}</div></div>
+   <button onclick="document.getElementById('scenarioReportOverlay').remove()" style="background:#102219;color:white;border:1px solid #294535;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer">Закрыть</button>
+ </div>
+ <div style="background:white;color:#151a17;border-radius:16px;padding:34px;font-family:Arial">
+   <div style="font-size:30px;font-weight:900">${title}</div>
+   <div style="color:#68736d;margin:8px 0 24px">Dashboard Lab · ${new Date().toLocaleDateString('ru-RU')}</div>
+   <style>.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.report-card{border:1px solid #d4dcd7;border-radius:12px;padding:18px;font-weight:700;white-space:normal}.report-note{margin-top:20px;border:1px solid #d4dcd7;border-radius:12px;padding:20px;line-height:1.6}</style>
+   ${body}
+ </div></div>`;
+ document.body.appendChild(ov);
+}
+function exportFreePDF(){
+ if(!freeItems.length){alert('Сначала добавь хотя бы один элемент в дашборд.');return}
+ const old=document.getElementById('exportPreviewOverlay'); if(old) old.remove();
+ const ov=document.createElement('div'); ov.id='exportPreviewOverlay';
+ ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#07110c;padding:22px;overflow:auto';
+ const title=(document.getElementById('freeProject').value||'Мой дашборд').toUpperCase();
+ ov.innerHTML=`<div style="max-width:1180px;margin:auto">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px">
+    <div><div style="color:#8dff4f;font-weight:900;letter-spacing:2px">ЭКСПОРТ / ПРЕДПРОСМОТР</div>
+    <div style="font-size:30px;font-weight:900;color:white;margin-top:4px">${title}</div></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="alert('Скачивание PDF будет доступно после публикации Dashboard Lab на обычном сайте. Предпросмотр отчёта уже сформирован.')" style="background:#a8ff2e;border:0;border-radius:10px;padding:13px 18px;font-weight:900;cursor:pointer">PDF (после публикации)</button>
+      <button onclick="document.getElementById('exportPreviewOverlay').remove()" style="background:#102219;color:white;border:1px solid #294535;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer">Закрыть</button>
+    </div>
+   </div>
+   <div style="background:white;color:#151a17;border-radius:16px;padding:34px">
+    <div style="font:900 30px Arial">${title}</div>
+    <div style="font:16px Arial;color:#68736d;margin:8px 0 24px">Dashboard Lab · ${new Date().toLocaleDateString('ru-RU')} · ${freeItems.length} элементов</div>
+    <div id="exportPreviewCards" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px"></div>
+   </div>
+ </div>`;
+ document.body.appendChild(ov);
+ const box=ov.querySelector('#exportPreviewCards');
+ freeItems.forEach(it=>{
+   const d=document.createElement('div');
+   d.style.cssText='border:1px solid #d4dcd7;border-radius:14px;padding:20px;min-height:190px;background:#fff;overflow:hidden';
+   d.innerHTML='<div style="font:800 20px Arial;margin-bottom:14px">'+it.title+'</div><div class="exportViz"></div>';
+   box.appendChild(d); drawExportViz(d.querySelector('.exportViz'),it);
+ });
+}
+function drawExportViz(e,x){
+ const lime='#67bd17',mut='#69766f';
+ if(x.type==='kpi'){e.innerHTML=`<div style="font:900 52px Arial">${Number(x.value||0).toLocaleString('ru-RU')}</div>`;return}
+ if(x.type==='change'){e.innerHTML=`<div style="font:900 46px Arial">${Number(x.value||0).toLocaleString('ru-RU')}</div><div style="font:900 25px Arial;color:${x.change>=0?lime:'#d34d4d'}">${x.change>=0?'↑':'↓'} ${Math.abs(x.change)}%</div>`;return}
+ if(x.type==='progress'){let p=Math.max(0,Math.min(100,x.max?x.value/x.max*100:0));e.innerHTML=`<div style="font:900 34px Arial">${Math.round(p)}%</div><div style="height:14px;background:#e1e8e4;border-radius:9px;margin:12px 0"><div style="height:100%;width:${p}%;background:${lime};border-radius:9px"></div></div><div style="color:${mut};font:16px Arial">${x.value} из ${x.max}</div>`;return}
+ if(x.type==='gauge'){let p=Math.max(0,Math.min(100,x.max?x.value/x.max*100:0)),a=-90+p*1.8; e.innerHTML=`<svg viewBox="0 0 220 135" style="width:230px;display:block;margin:auto"><path d="M30 105 A80 80 0 0 1 190 105" fill="none" stroke="#dfe7e2" stroke-width="18" stroke-linecap="round"/><path d="M30 105 A80 80 0 0 1 190 105" fill="none" stroke="${lime}" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="${p} 100"/><line x1="110" y1="105" x2="110" y2="40" stroke="#222" stroke-width="4" transform="rotate(${a} 110 105)"/><circle cx="110" cy="105" r="7" fill="#222"/><text x="30" y="130" font-size="12">0</text><text x="105" y="22" font-size="12">${Math.round(x.max/2)}</text><text x="185" y="130" font-size="12">${x.max}</text></svg><div style="text-align:center;font:900 25px Arial">${x.value} / ${x.max}</div>`;return}
+ if(x.type==='bar'){let d=x.data||[],m=Math.max(1,...d.map(z=>z.value));e.innerHTML=`<div style="height:150px;display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid #bbb">${d.map(z=>`<div style="flex:1;text-align:center"><div style="font:12px Arial">${z.value}</div><div style="height:${120*z.value/m}px;background:${lime};min-width:16px"></div><div style="font:12px Arial;margin-top:5px">${z.label}</div></div>`).join('')}</div>`;return}
+ if(x.type==='line'){let d=x.data||[],m=Math.max(1,...d.map(z=>z.value)),pts=d.map((z,i)=>`${20+i*260/Math.max(1,d.length-1)},${135-100*z.value/m}`).join(' ');e.innerHTML=`<svg viewBox="0 0 300 165" style="width:100%"><line x1="20" y1="135" x2="285" y2="135" stroke="#aaa"/><polyline points="${pts}" fill="none" stroke="${lime}" stroke-width="4"/>${d.map((z,i)=>{let xx=20+i*260/Math.max(1,d.length-1),yy=135-100*z.value/m;return `<circle cx="${xx}" cy="${yy}" r="4" fill="${lime}"/><text x="${xx}" y="${yy-8}" font-size="10" text-anchor="middle">${z.value}</text><text x="${xx}" y="153" font-size="10" text-anchor="middle">${z.label}</text>`}).join('')}</svg>`;return}
+ if(x.type==='pie'){let d=x.data||[],tot=d.reduce((a,z)=>a+Math.max(0,z.value),0)||1,cols=['#83e834','#46cce5','#f3aa3b','#e75b5b','#8264df'],cur=0,stops=d.map((z,i)=>{let a=cur,b=cur+z.value/tot*100;cur=b;return `${cols[i%cols.length]} ${a}% ${b}%`}).join(',');e.innerHTML=`<div style="display:flex;align-items:center;gap:25px"><div style="width:145px;height:145px;border-radius:50%;background:conic-gradient(${stops})"></div><div>${d.map((z,i)=>`<div style="font:14px Arial;margin:7px 0"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cols[i%cols.length]};margin-right:7px"></span>${z.label}: <b>${z.value}</b> (${Math.round(z.value/tot*100)}%)</div>`).join('')}</div></div>`}
+}
+function downloadFreePDF(){
+ if(!freeItems.length){alert('Сначала добавь хотя бы один элемент в дашборд.');return}
+ const W=1600,H=Math.max(900,260+Math.ceil(freeItems.length/2)*330);
+ const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+ g.fillStyle='#ffffff';g.fillRect(0,0,W,H);
+ g.fillStyle='#111';g.font='900 46px Arial';g.fillText((document.getElementById('freeProject').value||'Мой дашборд').toUpperCase(),70,85);
+ g.fillStyle='#666';g.font='22px Arial';g.fillText('DASHBOARD LAB · '+new Date().toLocaleDateString('ru-RU'),70,125);
+ g.strokeStyle='#d9dedb';g.lineWidth=2;g.beginPath();g.moveTo(70,155);g.lineTo(W-70,155);g.stroke();
+
+ const colors=['#7acb22','#27bfd8','#f0a43a','#e75b5b','#8464df','#3f79db','#e5bf28'];
+ function card(x,y,w,h,title){
+   g.fillStyle='#fff';g.strokeStyle='#cfd6d2';g.lineWidth=2;g.beginPath();g.roundRect(x,y,w,h,22);g.fill();g.stroke();
+   g.fillStyle='#222';g.font='700 25px Arial';g.fillText(title,x+28,y+42);
+ }
+ function lineText(txt,x,y,size=18,color='#555'){g.fillStyle=color;g.font=size+'px Arial';g.fillText(txt,x,y)}
+ freeItems.forEach((it,i)=>{
+   const col=i%2,row=Math.floor(i/2),x=70+col*745,y=195+row*330,w=700,h=285;
+   card(x,y,w,h,it.title);
+   if(it.type==='kpi'){g.fillStyle='#65b91c';g.font='900 72px Arial';g.fillText(Number(it.value||0).toLocaleString('ru-RU'),x+30,y+145)}
+   else if(it.type==='change'){g.fillStyle='#222';g.font='900 60px Arial';g.fillText(Number(it.value||0).toLocaleString('ru-RU'),x+30,y+135);g.fillStyle=it.change>=0?'#65b91c':'#d84d4d';g.font='800 32px Arial';g.fillText((it.change>=0?'↑ ':'↓ ')+Math.abs(it.change)+'%',x+30,y+185)}
+   else if(it.type==='progress'){let q=Math.max(0,Math.min(1,it.max?it.value/it.max:0));g.fillStyle='#222';g.font='900 42px Arial';g.fillText(Math.round(q*100)+'%',x+30,y+120);g.fillStyle='#e4e9e6';g.fillRect(x+30,y+150,620,24);g.fillStyle='#7acb22';g.fillRect(x+30,y+150,620*q,24);lineText(it.value+' из '+it.max,x+30,y+215)}
+   else if(it.type==='gauge'){let q=Math.max(0,Math.min(1,it.max?it.value/it.max:0)),cx=x+350,cy=y+190,r=105;g.lineWidth=24;g.lineCap='round';g.strokeStyle='#dfe6e2';g.beginPath();g.arc(cx,cy,r,Math.PI,2*Math.PI);g.stroke();g.strokeStyle='#7acb22';g.beginPath();g.arc(cx,cy,r,Math.PI,Math.PI+Math.PI*q);g.stroke();let a=Math.PI+Math.PI*q;g.strokeStyle='#222';g.lineWidth=5;g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(a)*82,cy+Math.sin(a)*82);g.stroke();g.fillStyle='#222';g.beginPath();g.arc(cx,cy,8,0,Math.PI*2);g.fill();g.font='900 30px Arial';g.fillText(it.value+' / '+it.max,cx-55,cy+55)}
+   else if(it.type==='bar'){let d=it.data||[],mx=Math.max(1,...d.map(z=>z.value)),bw=Math.min(90,520/Math.max(1,d.length));d.forEach((z,j)=>{let bh=150*z.value/mx,bx=x+55+j*(560/d.length),by=y+220-bh;g.fillStyle='#7acb22';g.fillRect(bx,by,bw,bh);lineText(String(z.value),bx,by-8,14,'#222');lineText(z.label,bx,y+250,14,'#555')})}
+   else if(it.type==='line'){let d=it.data||[],mx=Math.max(1,...d.map(z=>z.value)),pts=d.map((z,j)=>[x+55+j*570/Math.max(1,d.length-1),y+220-150*z.value/mx]);g.strokeStyle='#65b91c';g.lineWidth=5;g.beginPath();pts.forEach((p,j)=>j?g.lineTo(...p):g.moveTo(...p));g.stroke();pts.forEach((p,j)=>{g.fillStyle='#65b91c';g.beginPath();g.arc(p[0],p[1],6,0,Math.PI*2);g.fill();lineText(String(d[j].value),p[0]-10,p[1]-12,13,'#222');lineText(d[j].label,p[0]-10,y+250,13,'#555')})}
+   else if(it.type==='pie'){let d=it.data||[],tot=d.reduce((a,z)=>a+Math.max(0,z.value),0)||1,a=-Math.PI/2,cx=x+190,cy=y+165,r=90;d.forEach((z,j)=>{let b=a+Math.PI*2*z.value/tot;g.fillStyle=colors[j%colors.length];g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,r,a,b);g.closePath();g.fill();a=b;lineText(z.label+' '+Math.round(z.value/tot*100)+'%',x+330,y+95+j*30,16,'#333')})}
+ });
+ const jpg=c.toDataURL('image/jpeg',0.92).split(',')[1],bin=atob(jpg),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+ const enc=new TextEncoder(),parts=[],offs=[0],push=t=>parts.push(typeof t==='string'?enc.encode(t):t);
+ push('%PDF-1.4\n');
+ function obj(n,body){offs[n]=parts.reduce((a,b)=>a+b.length,0);push(n+' 0 obj\n'+body+'\nendobj\n')}
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+ offs[4]=parts.reduce((a,b)=>a+b.length,0);push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`);push(bytes);push('\nendstream\nendobj\n');
+ const stream=`q\n${W} 0 0 ${H} 0 0 cm\n/Im0 Do\nQ`;obj(5,`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+ const xref=parts.reduce((a,b)=>a+b.length,0);push('xref\n0 6\n0000000000 65535 f \n');for(let i=1;i<=5;i++)push(String(offs[i]).padStart(10,'0')+' 00000 n \n');push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+ const blob=new Blob(parts,{type:'application/pdf'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(document.getElementById('freeProject').value||'dashboard').replace(/[^\wа-яёіїєґ -]/gi,'_')+'.pdf';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)
+}
+function resetFree(){freeItems=[];let p=document.getElementById('freeProject');if(p)p.value='Мой дашборд';renderFree()}
+
+</script></body></html>
